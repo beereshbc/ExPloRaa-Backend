@@ -1,5 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
+import mongoose from "mongoose";
 
 import PlacesRoutes from "./routes/places-routes.js";
 import usersRoutes from "./routes/users-routes.js";
@@ -21,4 +22,14 @@ app.use((error, req, res, next) => {
   res.json({ message: error.message || "A unknown error occured" });
 });
 
-app.listen(5000);
+mongoose
+  .connect(
+    "mongodb+srv://beereshbc:beereshbc@backenddb.wcm3b.mongodb.net/places"
+  )
+  .then(() => {
+    app.listen(5000);
+    console.log("DB connected Successfully");
+  })
+  .catch((error) => {
+    console.log(error);
+  });
