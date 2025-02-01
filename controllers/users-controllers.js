@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import HttpError from "../models/http-error.js";
+import { validationResult } from "express-validator";
 
 let USERS = [
   {
@@ -35,6 +36,11 @@ const getUserById = (req, res, next) => {
 };
 
 const signIn = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    throw new HttpError("Enter valid input", 422);
+  }
+
   const { name, placeCount, email, password } = req.body;
 
   const hasUser = USERS.find((u) => u.email === email);

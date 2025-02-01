@@ -1,6 +1,7 @@
 import HttpError from "../models/http-error.js";
 import { v4 as uuidv4 } from "uuid";
-
+import { validationResult } from "express-validator";
+// const getCoordsForAddress = require('../util/location');
 let DUMMY_PLACES = [
   {
     id: "p1",
@@ -50,7 +51,45 @@ const getPlacesByUserId = (req, res, next) => {
   res.json({ places });
 };
 
+// Edu location.js ind get api request kalsirode for petch the location
+
+// const createPlace = async (req, res, next) => {
+//   const errors = validationResult(req);
+//   if (!errors.isEmpty()) {
+//     return next(
+//       new HttpError('Invalid inputs passed, please check your data.', 422)
+//     );
+//   }
+
+//   const { title, description, address, creator } = req.body;
+
+//   let coordinates;
+//   try {
+//     coordinates = await getCoordsForAddress(address);
+//   } catch (error) {
+//     return next(error);
+//   }
+
+//   // const title = req.body.title;
+//   const createdPlace = {
+//     id: uuid(),
+//     title,
+//     description,
+//     location: coordinates,
+//     address,
+//     creator
+//   };
+
+//   DUMMY_PLACES.push(createdPlace); //unshift(createdPlace)
+
+//   res.status(201).json({ place: createdPlace });
+// };
+
 const createPlace = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    throw new HttpError("Enter valid input", 422);
+  }
   const { title, address, description, coordinates, creator } = req.body;
   const createdPlace = {
     id: uuidv4(),
@@ -90,6 +129,9 @@ const updatePlace = (req, res, next) => {
 
 const deletePlace = (req, res, next) => {
   const placeId = req.body.pid;
+  if (DUMMY_PLACES.find((p) => p.id === placeId)) {
+    throw new HttpError("place doesn't exist", 401);
+  }
   DUMMY_PLACES = DUMMY_PLACES.filter((p) => p.id !== placeId);
   res.status(200).json({ message: "Deleted Successfully" });
 };
