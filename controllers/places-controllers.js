@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { validationResult } from "express-validator";
 import { Place } from "../models/place.js";
 import mongoose from "mongoose";
+import { User } from "../models/user.js";
 
 // const getCoordsForAddress = require('../util/location');  <--- For google map
 let DUMMY_PLACES = [
@@ -138,11 +139,25 @@ const createPlace = async (req, res, next) => {
     address,
     description,
     location: coordinates,
-    creator: uuidv4(),
+    creator,
     image,
   });
+
+  let user;
   try {
-    await createdPlace.save();
+    user = await User.findById(creator);
+  } catch (error) {
+    const err = new HttpError("place not creat please try again later");
+    return next(err);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await createdPlace.save({ session: sess });
+    user.places.push(createdPlace);
+    await user.save({ session: sess });
+    await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError("Place creation failed", 500);
     next(error);
