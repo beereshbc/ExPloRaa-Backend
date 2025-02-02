@@ -25,7 +25,7 @@ router.post(
   createPlace
 );
 
-router.patch("/:pid", updatePlace);
 router.delete("/:pid", deletePlace);
+router.patch("/:pid", updatePlace);
 
 export default router;
