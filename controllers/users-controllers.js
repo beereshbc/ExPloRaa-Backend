@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import HttpError from "../models/http-error.js";
 import { validationResult } from "express-validator";
+import { User } from "../models/user.js";
 
 let USERS = [
   {
@@ -23,9 +24,15 @@ let USERS = [
   },
 ];
 
-const getUsers = (req, res, next) => {
-  const users = USERS;
-  res.json({ users: users });
+const getUsers = async (req, res, next) => {
+  let users;
+  try {
+    users = await User.find({}, "-password");
+  } catch (error) {
+    const err = new HttpError("User Fetching is failed try again");
+    return next(err);
+  }
+  res.json({ users: users.map((user) => user.toObject({ getters: true })) });
 };
 
 const getUserById = (req, res, next) => {
@@ -35,38 +42,54 @@ const getUserById = (req, res, next) => {
   res.json({ Name: "Hello! Beeresh", user });
 };
 
-const signIn = (req, res, next) => {
+const signIn = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new HttpError("Enter valid input", 422);
+    return next(new HttpError("Enter valid input", 422));
   }
 
-  const { name, placeCount, email, password } = req.body;
+  const { name, email, password } = req.body;
 
-  const hasUser = USERS.find((u) => u.email === email);
-  if (hasUser) {
-    throw new HttpError("Email is already exist", 422);
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (error) {
+    const err = new HttpError("Email already register please login", 500);
+    return next(err);
   }
 
-  const createdUser = {
-    id: uuidv4(),
-    name: name,
-    places: placeCount,
+  const createdUser = await User({
+    name,
     email,
     password,
-  };
+    places: [],
+  });
 
-  USERS.push(createdUser);
+  try {
+    createdUser.save();
+  } catch (error) {
+    const err = new HttpError("Something went wrong SignIn Failed");
+    return next(err);
+  }
   res.status(200).json({ user: createdUser });
 };
 
-const login = (req, res, next) => {
+const login = async (req, res, next) => {
   const { email, password } = req.body;
-  const identifiedUser = USERS.find((u) => u.email === email);
+
+  let identifiedUser;
+  try {
+    identifiedUser = await User.findOne({ email: email });
+  } catch (error) {
+    const err = new HttpError("Login failed try again", 500);
+    return next(err);
+  }
 
   if (!identifiedUser || identifiedUser.password !== password) {
-    throw new HttpError("Could not found user try again ", 401);
+    const err = new HttpError("Invalid credentials try again", 401);
+    return next(err);
   }
+
   res.json({ message: "Login Successfully" });
 };
 
